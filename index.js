@@ -7,6 +7,7 @@
 const http = require('http');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
+const config = require('./config');
 
 // The server should respond to all requests with a string
 const server = http.createServer(function (request, response) {
@@ -29,19 +30,53 @@ const server = http.createServer(function (request, response) {
     });
     request.on('end', function () {
         buffer += decoder.end();
-        // Send the response
-        response.end(trimmedPath);
-        // Log the request path
-        console.log('Received: ' + method + ' request on '  + trimmedPath + ' with:');
-        console.log(queryString);
-        console.log('and:');
-        console.log(headers);
-        console.log('Payload:');
-        console.log(buffer);
+
+        const correspondingHandler = typeof (router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
+        const data = {
+            'trimmedPath': trimmedPath,
+            'queryString': queryString,
+            'method': method,
+            'headers': headers,
+            'payload': buffer
+        };
+
+        correspondingHandler(data, function (statusCode, payload) {
+            // Default statusCode
+            statusCode = typeof (statusCode) == 'number' ? statusCode : 200;
+            // Default payload
+            payload = typeof (payload) == 'object' ? payload : {};
+            const convertedPayload = JSON.stringify(payload);
+            // Build and return the response
+            response.setHeader('Content-Type', 'application/json')
+            response.writeHead(statusCode);
+            response.end(convertedPayload);
+            // Log the response
+            console.log('New request made');
+        });
+
     });
 });
 
 // Start the server and have it listen on port 3000
-server.listen(3000, function () {
-    console.log("Server's listening on port 3000 now");
+server.listen(config.port, function () {
+    console.log("Server's listening on port " + config.port + " in " + config.key + " mode");
 });
+
+// Define the handlers
+const handlers = {}
+
+// Sample handler
+handlers.sample = function (data, callback) {
+    // Callback a HTTP status code, and a payload object
+    callback(406, {'name': 'sample handler'});
+};
+
+// Not found hanlder
+handlers.notFound = function (data, callback) {
+    callback(404);
+};
+
+// Define a request router
+const router = {
+    'sample': handlers.sample
+}
