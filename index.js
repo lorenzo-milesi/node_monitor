@@ -5,11 +5,37 @@
 
 // Dependencies
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
+const config = require('./config');
+const fs = require('fs');
 
-// The server should respond to all requests with a string
-const server = http.createServer(function (request, response) {
+// HTTP server
+const httpServer = http.createServer(function (request, response) {
+    serverLogic(request, response);
+});
+
+httpServer.listen(config.httpPort, function () {
+    console.log("Server listening on port " + config.httpPort + " in " + config.key + " mode");
+});
+
+// HTTPS server
+const httpsServerOptions = {
+    'key' : fs.readFileSync('./https/key.pem'),
+    'vert' : fs.readFileSync('./https/cert.pem'),
+};
+
+const httpsServer = https.createServer(httpsServerOptions, function (request, response) {
+    serverLogic(request, response);
+});
+
+httpsServer.listen(config.httpsPort, function () {
+    console.log("Server listening on port " + config.httpsPort + " in " + config.key + " mode");
+});
+
+// Server logic (for HTTP and HTTPS)
+const serverLogic = function (request, response) {
     // Get the URL and parse it
     const parsedUrl = url.parse(request.url, true);
     // Get the path
@@ -29,19 +55,48 @@ const server = http.createServer(function (request, response) {
     });
     request.on('end', function () {
         buffer += decoder.end();
-        // Send the response
-        response.end(trimmedPath);
-        // Log the request path
-        console.log('Received: ' + method + ' request on '  + trimmedPath + ' with:');
-        console.log(queryString);
-        console.log('and:');
-        console.log(headers);
-        console.log('Payload:');
-        console.log(buffer);
-    });
-});
 
-// Start the server and have it listen on port 3000
-server.listen(3000, function () {
-    console.log("Server's listening on port 3000 now");
-});
+        const correspondingHandler = typeof (router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
+        const data = {
+            'trimmedPath': trimmedPath,
+            'queryString': queryString,
+            'method': method,
+            'headers': headers,
+            'payload': buffer
+        };
+
+        correspondingHandler(data, function (statusCode, payload) {
+            // Default statusCode
+            statusCode = typeof (statusCode) == 'number' ? statusCode : 200;
+            // Default payload
+            payload = typeof (payload) == 'object' ? payload : {};
+            const convertedPayload = JSON.stringify(payload);
+            // Build and return the response
+            response.setHeader('Content-Type', 'application/json')
+            response.writeHead(statusCode);
+            response.end(convertedPayload);
+            // Log the response
+            console.log('New request made');
+        });
+
+    });
+}
+
+// Define the handlers
+const handlers = {}
+
+// Sample handler
+handlers.sample = function (data, callback) {
+    // Callback a HTTP status code, and a payload object
+    callback(406, {'name': 'sample handler'});
+};
+
+// Not found hanlder
+handlers.notFound = function (data, callback) {
+    callback(404);
+};
+
+// Define a request router
+const router = {
+    'sample': handlers.sample
+}
