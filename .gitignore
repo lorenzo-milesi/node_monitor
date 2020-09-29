@@ -119,3 +119,6 @@ dist
 
 # IDE
 .idea
+
+# Config
+https/*.pem
