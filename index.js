@@ -22,8 +22,8 @@ httpServer.listen(config.httpPort, function () {
 
 // HTTPS server
 const httpsServerOptions = {
-    'key' : fs.readFileSync('./https/key.pem'),
-    'vert' : fs.readFileSync('./https/cert.pem'),
+    'key': fs.readFileSync('./https/key.pem'),
+    'cert': fs.readFileSync('./https/cert.pem'),
 };
 
 const httpsServer = https.createServer(httpsServerOptions, function (request, response) {
@@ -85,11 +85,11 @@ const serverLogic = function (request, response) {
 // Define the handlers
 const handlers = {}
 
-// Sample handler
-handlers.sample = function (data, callback) {
-    // Callback a HTTP status code, and a payload object
-    callback(406, {'name': 'sample handler'});
-};
+// Ping handler
+handlers.ping = function (data, callback) {
+    callback(200);
+}
+
 
 // Not found hanlder
 handlers.notFound = function (data, callback) {
@@ -98,5 +98,5 @@ handlers.notFound = function (data, callback) {
 
 // Define a request router
 const router = {
-    'sample': handlers.sample
+    'ping': handlers.ping
 }
