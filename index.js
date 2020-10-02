@@ -23,7 +23,7 @@ httpServer.listen(config.httpPort, function () {
 // HTTPS server
 const httpsServerOptions = {
     'key': fs.readFileSync('./https/key.pem'),
-    'vert': fs.readFileSync('./https/cert.pem'),
+    'cert': fs.readFileSync('./https/cert.pem'),
 };
 
 const httpsServer = https.createServer(httpsServerOptions, function (request, response) {
@@ -89,6 +89,7 @@ const handlers = {}
 handlers.ping = function (data, callback) {
     callback(200);
 }
+
 
 // Not found hanlder
 handlers.notFound = function (data, callback) {
