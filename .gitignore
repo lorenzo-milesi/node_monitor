@@ -122,3 +122,4 @@ dist
 
 # Config
 https/*.pem
+.data

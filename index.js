@@ -8,8 +8,10 @@ const http = require('http');
 const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
-const config = require('./config');
+const config = require('./lib/config');
 const fs = require('fs');
+const handlers = require('./lib/handlers');
+const helpers = require('./lib/helpers');
 
 // HTTP server
 const httpServer = http.createServer(function (request, response) {
@@ -62,7 +64,7 @@ const serverLogic = function (request, response) {
             'queryString': queryString,
             'method': method,
             'headers': headers,
-            'payload': buffer
+            'payload': helpers.jsonToObject(buffer)
         };
 
         correspondingHandler(data, function (statusCode, payload) {
@@ -72,7 +74,7 @@ const serverLogic = function (request, response) {
             payload = typeof (payload) == 'object' ? payload : {};
             const convertedPayload = JSON.stringify(payload);
             // Build and return the response
-            response.setHeader('Content-Type', 'application/json')
+            response.setHeader('Content-Type', 'application/json');
             response.writeHead(statusCode);
             response.end(convertedPayload);
             // Log the response
@@ -80,23 +82,10 @@ const serverLogic = function (request, response) {
         });
 
     });
-}
-
-// Define the handlers
-const handlers = {}
-
-// Ping handler
-handlers.ping = function (data, callback) {
-    callback(200);
-}
-
-
-// Not found hanlder
-handlers.notFound = function (data, callback) {
-    callback(404);
 };
 
 // Define a request router
 const router = {
-    'ping': handlers.ping
-}
+    'ping': handlers.ping,
+    'users': handlers.users
+};
